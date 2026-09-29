@@ -1,0 +1,56 @@
+import { DataClass } from "$lib/DataClass"
+import type { Level } from "$lib/dnd/level"
+import type { Stab } from "$lib/pokemon/stab"
+import { PokemonType, type PokeType, type TeraType } from "$lib/pokemon/types"
+import type { Edition } from "$lib/srd/editions"
+
+export class MoveDamage extends DataClass<{
+	dice: {
+		"1": string,
+		"5": string,
+		"10": string,
+		"17": string,
+	},
+	modifier: string | number,
+	type: PokeType[] | "typeless" | "healing" | "stellar",
+}> {
+	damage(stab: Stab, mod: number, moveType: TeraType | "varies" | "typeless", pokemonType: PokeType[], level: Level, rulesVersion: Edition): {
+		dice: string,
+		mod: number,
+		isHealing: boolean,
+		stabApplied: boolean,
+	} {
+		let hasStab = this.data.type !== "healing" && PokemonType.isPokeType(moveType) ? pokemonType.includes(moveType) : false
+
+		let trueModifier = hasStab ? stab.calculate(mod, level, rulesVersion) : 0
+		const modifierCode = this.data.modifier
+		if (typeof modifierCode === "number") {
+			trueModifier += modifierCode
+		} else {
+			const patternMatch = modifierCode.match(/MOVE(\s*\+\s*(\d+))?/i)
+			if (modifierCode === "LEVEL") {
+				trueModifier += level.data
+			} else if (modifierCode === "MOVE + STAB") {
+				trueModifier += mod + stab.calculate(mod, level, rulesVersion)
+				hasStab = true
+			} else if (patternMatch) {
+				trueModifier += mod
+				trueModifier += parseInt(patternMatch[2] ?? "0")
+			}
+		}
+
+		return {
+			dice: this.getDamageDice(level.data),
+			mod: trueModifier,
+			isHealing: this.data.type === "healing",
+			stabApplied: hasStab,
+		}
+	}
+
+	getDamageDice(level: number) {
+		const keys = Object.keys(this.data.dice).map(Number)
+		const validKeys = keys.filter(key => key <= level)
+		const closestKey = Math.max(...validKeys)
+		return this.data.dice[closestKey]
+	}
+}
