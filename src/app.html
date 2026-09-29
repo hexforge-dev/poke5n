@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="%lang%">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="description" content="An online reference for pokemon dungeons and dragons homebrew!" />
+
+		<meta name="theme-color" content="#ffca04" />
+		<link rel="apple-touch-icon" sizes="192x192" href="%sveltekit.assets%/icons/192.png" />
+		<link rel="shortcut icon" href="%sveltekit.assets%/icons/032.png" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<link rel="stylesheet" href="%sveltekit.assets%/fonts/rubik/font-face.css" />
+		<link rel="stylesheet" href="%sveltekit.assets%/styles/normalize.css" />
+		<link rel="stylesheet" href="%sveltekit.assets%/styles/global.css" />
+		<link rel="manifest" href="%sveltekit.assets%/poke5e.webmanifest" />
+
+		<script>
+			function setEdition() {
+				const v = localStorage.getItem("rules-version")
+				const beta = localStorage.getItem("feature-toggle::PreviewUpdatedMoves") != null
+				const edition = (v === "2018" || v === "2024") ? v : "2024"
+
+				document.documentElement.dataset.edition = beta ? edition : "2018"
+			}
+
+			function redirectToPreferredLanguage() {
+				// for key, see LanguagePreference.ts
+				const pref = localStorage.getItem("language-preference")
+				if (!pref) return
+
+				const baseLocale = "%baseLocale%"
+				const prefixed = %locales%.filter((l) => l !== baseLocale)
+
+				const path = location.pathname
+				const seg = path.split("/")[1]
+				const current = prefixed.includes(seg) ? seg : baseLocale
+				if (current === pref) return
+
+				const rest = current === baseLocale ? path : path.slice(seg.length + 1) || "/"
+				location.replace((pref === baseLocale ? "" : "/" + pref) + rest + location.search + location.hash)
+			}
+
+			redirectToPreferredLanguage()
+			setEdition()
+		</script>
+
+		%sveltekit.head%
+	</head>
+	<body>
+		<div>%sveltekit.body%</div>
+		<script>
+			// This is to prevent flash of light mode
+			function setDefaultDayNightMode() {
+				const mode = localStorage.getItem("daynight")
+
+				if (mode === "night") {
+					document.body.classList.add("dark-mode")
+				}
+			}
+
+			setDefaultDayNightMode()
+		</script>
+	</body>
+</html>
